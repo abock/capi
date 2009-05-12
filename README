@@ -1,0 +1,7 @@
+CAPI is an *experimental* C Preprocessor and C tokenizer written in C#.
+
+The ultimate goal is to possibly replace gapi-parser with something that is
+actually sane, and not a glob of fragile stateless perl regular expressions.
+
+It is in VERY early development. The basic lexer and parser are in place,
+and most of the CPP logic is in place, but nothing else. Do not use! ;-)
