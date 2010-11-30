@@ -9,6 +9,14 @@
 
 #include "test-recursive.h"
 
+#if 0
+#warning reached
+#else
+#warning not reached
+#endif
+
+#warning __LINE__
+
 #ifdef one
 # define a 1
 #else
@@ -24,6 +32,10 @@
 #  define e 2
 # endif
 #endif
+
+#define FIRST_NAME aaron
+#define LAST_NAME bockover
+#define FULL_NAME FIRST_NAME LAST_NAME
 
 #warning End \
     of \

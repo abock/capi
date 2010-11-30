@@ -32,15 +32,41 @@ namespace Capi.Parser
 {
     public class Deserializer
     {
-        private Tokenizer tokenizer = new Tokenizer ();
+        private Tokenizer tokenizer;
         
-        public Deserializer () { }
-        public Deserializer (string input) { SetInput (input); }
-        public Deserializer (Stream stream) { SetInput (stream); }
-        public Deserializer (StreamReader reader) { SetInput (reader); }
-        
-        public string InputName { get; set; }
-        public ParserState ParserState { get; set; }
+        public Deserializer ()
+        {
+            tokenizer = new Tokenizer ();
+            tokenizer.TokenProduced += (o, e) => {
+                ParserState.SetBasicMacro ("__LINE__", tokenizer.CurrentLine);
+            };
+        }
+
+        public Deserializer (string input) : this () { SetInput (input); }
+        public Deserializer (Stream stream) : this () { SetInput (stream); }
+        public Deserializer (StreamReader reader) : this () { SetInput (reader); }
+
+        private string input_name;
+        public string InputName {
+            get { return input_name; }
+            set {
+                input_name = value;
+                if (ParserState != null) {
+                    ParserState.SetBasicMacro ("__FILE__", input_name);
+                }
+            }
+        }
+
+        private ParserState parser_state;
+        public ParserState ParserState {
+            get { return parser_state; }
+            set {
+                parser_state = value;
+                if (input_name != null) {
+                    parser_state.SetBasicMacro ("__FILE__", input_name);
+                }
+            }
+        }
         
         public Deserializer SetInput (StreamReader reader)
         {
@@ -130,6 +156,24 @@ namespace Capi.Parser
         
 #region CPP Parsers
 
+        private IEnumerable<Token> ExpandToken (Token token)
+        {
+            if (token.Type != TokenType.Identifier) {
+                yield return token;
+            } else {
+                CppMacro macro = null;
+                if (ParserState.CppDefines.TryGetValue ((string)token.Value, out macro)) {
+                    foreach (var node in macro) {
+                        foreach (var expanded_node in ExpandToken (node)) {
+                            yield return expanded_node;
+                        }
+                    }
+                } else {
+                    yield return token;
+                }
+            }
+        }
+
         private IEnumerable<Token> ConsumeCppDirective ()
         {
             Token token = null;
@@ -146,7 +190,9 @@ namespace Capi.Parser
                     case TokenType.NewLine:
                         yield break;
                     default:
-                        yield return token;
+                        foreach (var macro_node in ExpandToken (token)) {
+                            yield return macro_node;
+                        }
                         break;
                 }
             }
@@ -176,6 +222,7 @@ namespace Capi.Parser
             }
             
             switch (directive) {
+                case "if": ParseCppIf (); break;
                 case "ifdef": ParseCppIfdef (false); break;
                 case "ifndef": ParseCppIfdef (true); break;
                 case "endif": ParseCppEndif (); break;
@@ -263,6 +310,14 @@ namespace Capi.Parser
             if (fatal) {
                 throw new ApplicationException ("#error directive reached");
             }
+        }
+
+        private void ParseCppIf ()
+        {
+            foreach (var token in ConsumeCppDirective ()) {
+            }
+
+            ParserState.PushParsingEnabled (true);
         }
         
         private void ParseCppIfdef (bool negate)

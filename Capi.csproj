@@ -45,6 +45,7 @@
     <Compile Include="Capi\Options.cs" />
     <Compile Include="Capi.Parser\CppMacro.cs" />
     <Compile Include="Capi.Parser\TokenList.cs" />
+    <Compile Include="Capi.Parser\BasicCppMacro.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

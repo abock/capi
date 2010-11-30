@@ -55,6 +55,16 @@ namespace Capi.Parser
         public Tokenizer (string input) { SetInput (input); }
         public Tokenizer (Stream stream) { SetInput (stream); }
         public Tokenizer (StreamReader reader) { SetInput (reader); }
+
+        public event EventHandler TokenProduced;
+
+        public int CurrentLine {
+            get { return current_line; }
+        }
+
+        public int CurrentColumn {
+            get { return current_column; }
+        }
         
         private void Reset ()
         {
@@ -354,6 +364,11 @@ namespace Capi.Parser
             Token token = InnerScan ();
             if (token == null) {
                 return null;
+            }
+
+            var handler = TokenProduced;
+            if (handler != null) {
+                handler (this, EventArgs.Empty);
             }
             
             token.SourceLine = token_start_line;

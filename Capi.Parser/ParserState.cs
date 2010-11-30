@@ -34,6 +34,38 @@ namespace Capi.Parser
     {
         public ParserState ()
         {
+            cpp_defines = new Dictionary<string, CppMacro> ();
+            SetBasicMacro ("__LINE__", 0);
+            SetBasicMacro ("__FILE__", "unknown");
+        }
+
+        public void SetBasicMacro (string name, string value)
+        {
+            SetBasicMacro (name, new BasicCppMacro (value));
+        }
+
+        public void SetBasicMacro (string name, int value)
+        {
+            SetBasicMacro (name, new BasicCppMacro (value));
+        }
+
+        public void SetBasicMacro (string name, TokenType type, object value)
+        {
+            SetBasicMacro (name, new BasicCppMacro (type, value));
+        }
+
+        public void SetBasicMacro (string name, Token value)
+        {
+            SetBasicMacro (name, new BasicCppMacro (value));
+        }
+
+        public void SetBasicMacro (string name, BasicCppMacro value)
+        {
+            if (cpp_defines.ContainsKey (name)) {
+                cpp_defines[name] = value;
+            } else {
+                cpp_defines.Add (name, value);
+            }
         }
         
         public void PrependSystemIncludePath (string path)
@@ -54,7 +86,7 @@ namespace Capi.Parser
             }
         }
         
-        private Dictionary<string, CppMacro> cpp_defines = new Dictionary<string, CppMacro> ();
+        private Dictionary<string, CppMacro> cpp_defines;
         public Dictionary<string, CppMacro> CppDefines {
             get { return cpp_defines; }
         }
