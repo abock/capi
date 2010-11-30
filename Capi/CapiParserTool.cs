@@ -76,7 +76,11 @@ namespace Capi
             Console.WriteLine ("CPP Macros");
             Console.WriteLine ("----------");
             foreach (var cpp_def in parser_state.CppDefines) {
-                Console.WriteLine ("  {0} = {1}", cpp_def.Key, cpp_def.Value.Pop ().Value);
+                Console.Write ("  {0} =", cpp_def.Key);
+                foreach (var token in cpp_def.Value) {
+                    Console.Write (" {0}", token.Value);
+                }
+                Console.WriteLine ();
             }
         }
     }

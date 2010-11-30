@@ -1,10 +1,10 @@
 // 
-// TokenStack.cs
+// TokenList.cs
 //  
 // Author:
 //   Aaron Bockover <abockover@novell.com>
 // 
-// Copyright 2009 Novell, Inc.
+// Copyright 2010 Novell, Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,8 +29,25 @@ using System.Collections.Generic;
 
 namespace Capi.Parser
 {
-    public class TokenStack : Stack<Token>
+    public class TokenList : List<Token>
     {
+        public TokenList ()
+        {
+        }
+
+        public TokenList (IEnumerable<Token> tokens) : base (tokens)
+        {
+        }
+
         public Token Parent { get; set; }
+
+        public override string ToString ()
+        {
+            var str = new System.Text.StringBuilder ();
+            foreach (var token in this) {
+                str.AppendFormat ("{0} ", token.Value);
+            }
+            return str.ToString ().Trim ();
+        }
     }
 }

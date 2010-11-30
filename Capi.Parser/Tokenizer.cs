@@ -37,6 +37,7 @@ namespace Capi.Parser
         {
             public char [] StringOpenTokens = new char [] { '"' };
             public char [] StringCloseTokens = new char [] { '"' };
+            public bool TokenizeNewLines = false;
         }
     
         private StreamReader reader;
@@ -363,7 +364,7 @@ namespace Capi.Parser
         public char PeekAhead ()
         {
             for (; ; ReadChar ()) {
-                if (!Char.IsWhiteSpace (peek)) {
+                if (!Char.IsWhiteSpace (peek) || (config.TokenizeNewLines && peek == '\n')) {
                     break;
                 }
             }

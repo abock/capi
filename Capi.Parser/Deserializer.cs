@@ -65,9 +65,7 @@ namespace Capi.Parser
             if (ParserState == null) {
                 throw new InvalidOperationException ("ParserState must be set before calling Deserialize");
             }
-            
-            Console.WriteLine ("Parsing: {0}", InputName);
-        
+
             Token token = null;
             while ((token = CheckScan (TokenType.None, true)) != null) {
                 if (token.Type == TokenType.Hash) {
@@ -79,7 +77,7 @@ namespace Capi.Parser
                 }
             }
         }
-        
+
         private Token CheckScan (TokenType expected)
         {
             return CheckScan (expected, false);
@@ -87,7 +85,7 @@ namespace Capi.Parser
         
         private Token CheckScan (TokenType expected, bool eofok)
         {
-            Token token = tokenizer.Scan ();
+            var token = tokenizer.Scan ();
             if (token == null && eofok) {
                 return null;
             } else if (token == null) {
@@ -132,10 +130,40 @@ namespace Capi.Parser
         
 #region CPP Parsers
 
+        private IEnumerable<Token> ConsumeCppDirective ()
+        {
+            Token token = null;
+            while ((token = CheckScan (TokenType.None, true)) != null) {
+                switch (token.Type) {
+                    case TokenType.BackSlash:
+                        var next_token = CheckScan (TokenType.None, true);
+                        if (next_token.Type == TokenType.NewLine) {
+                            continue;
+                        }
+                        yield return token;
+                        yield return next_token;
+                        break;
+                    case TokenType.NewLine:
+                        yield break;
+                    default:
+                        yield return token;
+                        break;
+                }
+            }
+        }
+
+        private void EnsureCppDirectiveEnd ()
+        {
+            CheckScan (TokenType.NewLine, true);
+        }
+
         private void ParseCppDirective ()
         {
             var directive_token = CheckScan (TokenType.Identifier);
             string directive = (string)directive_token.Value;
+
+            tokenizer.PushConfig ();
+            tokenizer.Config.TokenizeNewLines = true;
             
             if (ParserState.IsParsingEnabled) {
                 switch (directive) {
@@ -153,19 +181,20 @@ namespace Capi.Parser
                 case "endif": ParseCppEndif (); break;
                 case "else": ParseCppElse (); break;
             }
+
+            tokenizer.PopConfig ();
         }
         
         private void ParseCppDefine (Token define)
         {
-            Token new_name_token = CheckScan (TokenType.Identifier);
             CppMacro old_macro = null;
+            var new_name_token = CheckScan (TokenType.Identifier);
             var name = (string)new_name_token.Value;
             
-            CppMacro new_macro = new CppMacro () { 
+            var new_macro = new CppMacro (ConsumeCppDirective ()) {
                 Parent = new_name_token,
                 InputName = InputName
             };
-            new_macro.Push (tokenizer.Scan ());
             
             if (ParserState.CppDefines.TryGetValue (name, out old_macro)) {
                 LogWarning (define, String.Format ("\"{0}\" redefined", name));
@@ -183,6 +212,8 @@ namespace Capi.Parser
             if (ParserState.CppDefines.ContainsKey (name)) {
                 ParserState.CppDefines.Remove (name);
             }
+
+            EnsureCppDirectiveEnd ();
         }
         
         private void ParseCppInclude ()
@@ -210,6 +241,8 @@ namespace Capi.Parser
             }
             
             tokenizer.PopConfig ();
+
+            EnsureCppDirectiveEnd ();
         }
         
         private void CppIncludeFile (string path)
@@ -224,9 +257,8 @@ namespace Capi.Parser
         
         private void ParseCppMessage (Token directive, bool fatal)
         {
-            // FIXME: This should be a stream of unexpanded tokens, not a single string
-            var message = CheckScan (TokenType.String);
-            LogWarning (directive, (string)message.Value);
+            var message = new TokenList (ConsumeCppDirective ());
+            LogWarning (directive, message.ToString ());
             
             if (fatal) {
                 throw new ApplicationException ("#error directive reached");
@@ -235,53 +267,28 @@ namespace Capi.Parser
         
         private void ParseCppIfdef (bool negate)
         {
-            if (!ParserState.IsParsingEnabled) {
-                return;
-            }
-        
             var name = (string)CheckScan (TokenType.Identifier).Value;
-            
-            Console.Write ("{0}#if{1}def {2} :: {3} -> ", 
-                String.Empty.PadLeft (ParserState.ParsingEnabledDepth + 1),
-                negate ? "n" : "",
-                name, ParserState.IsParsingEnabled);
-            
+
             bool enabled = ParserState.CppDefines.ContainsKey (name);
             if (negate) {
                 enabled = !enabled;
             }
-            
+
             ParserState.PushParsingEnabled (enabled);
-            
-            Console.WriteLine (ParserState.IsParsingEnabled);
+
+            EnsureCppDirectiveEnd ();
         }
         
         private void ParseCppEndif ()
         {
-            Console.Write ("{0}#endif --> {1} -> ", 
-                String.Empty.PadLeft (ParserState.ParsingEnabledDepth), 
-                ParserState.IsParsingEnabled);
-                
             ParserState.PopParsingEnabled ();
-            
-            Console.WriteLine (ParserState.IsParsingEnabled);
+            EnsureCppDirectiveEnd ();
         }
         
         private void ParseCppElse ()
         {
-            if (!ParserState.IsParsingEnabled) {
-                return;
-            }
-        
-            Console.Write ("{0}#else --> {1} -> ", 
-                String.Empty.PadLeft (ParserState.ParsingEnabledDepth), 
-                ParserState.IsParsingEnabled);
-            
-            bool enabled = ParserState.IsParsingEnabled;
-            ParserState.PopParsingEnabled ();
-            ParserState.PushParsingEnabled (!enabled);
-            
-            Console.WriteLine (ParserState.IsParsingEnabled);
+            ParserState.PushParsingEnabled (!ParserState.PopParsingEnabled () && ParserState.IsParsingEnabled);
+            EnsureCppDirectiveEnd ();
         }
 
 #endregion

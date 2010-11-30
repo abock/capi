@@ -28,11 +28,15 @@ using System;
 
 namespace Capi.Parser
 {
-    public class CppMacro : TokenStack
+    public class CppMacro : TokenList
     {
         public string InputName { get; set; }
     
         public CppMacro ()
+        {
+        }
+
+        public CppMacro (System.Collections.Generic.IEnumerable<Token> tokens) : base (tokens)
         {
         }
     }

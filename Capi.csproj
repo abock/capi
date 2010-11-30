@@ -9,6 +9,7 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>Capi</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <RootNamespace>Capi</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,15 +42,14 @@
     <Compile Include="Capi\CapiParserTool.cs" />
     <Compile Include="Capi.Parser\Deserializer.cs" />
     <Compile Include="Capi.Parser\ParserState.cs" />
-    <Compile Include="Capi.Parser\TokenStack.cs" />
     <Compile Include="Capi\Options.cs" />
     <Compile Include="Capi.Parser\CppMacro.cs" />
+    <Compile Include="Capi.Parser\TokenList.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Tests\gl.h" />
     <None Include="Tests\cpp-test.h" />
     <None Include="Tests\test-recursive.h" />
   </ItemGroup>

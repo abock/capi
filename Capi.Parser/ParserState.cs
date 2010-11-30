@@ -76,9 +76,9 @@ namespace Capi.Parser
             parsing_enabled.Push (enabled);
         }
         
-        internal void PopParsingEnabled ()
+        internal bool PopParsingEnabled ()
         {
-            parsing_enabled.Pop ();
+            return parsing_enabled.Pop ();
         }
         
         internal bool IsParsingEnabled {
